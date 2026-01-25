@@ -16,9 +16,12 @@
  */
 #include QMK_KEYBOARD_H
 
-#ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-#    include "timer.h"
-#endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+#include "features/casemodes.h"
+#include "features/oneshot.h"
+#include "features/swapper.h"
+#include "features/keymap_swedish_mac_ansi.h"
+#include "keymap_swedish.h"
+#include "sendstring_swedish.h"
 
 enum charybdis_keymap_layers {
     LAYER_BASE = 0,
@@ -29,6 +32,33 @@ enum charybdis_keymap_layers {
     LAYER_NUMERAL,
     LAYER_SYMBOLS,
 };
+
+// {{{ tap dances
+enum td_keycodes {
+    TD_CAPS,
+    TD_SYMB,
+    TD_MAC_SYMB
+};
+
+void dance_capsword(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        enable_caps_word();
+        enable_xcase_with(SE_UNDS);
+    } else if (state->count == 2) {
+        enable_xcase_with(SE_UNDS);
+    } else {
+        set_oneshot_mods(MOD_LSFT);
+        enable_xcase_with(OSM(MOD_LSFT));
+        reset_tap_dance(state);
+    }
+}
+
+tap_dance_action_t tap_dance_actions[] = {
+    [TD_CAPS] = ACTION_TAP_DANCE_FN(dance_capsword),
+};
+
+#define TD_CPS TD(TD_CAPS)
+// }}}
 
 // Automatically enable sniping-mode on the pointer layer.
 #define CHARYBDIS_AUTO_SNIPING_ON_LAYER LAYER_POINTER
@@ -255,3 +285,4 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 // rgb_matrix.c.
 void rgb_matrix_update_pwm_buffers(void);
 #endif
+// vim: set foldmethod=marker:foldlevel=0
