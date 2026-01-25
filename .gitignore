@@ -9,3 +9,7 @@
 *.hex
 *.bin
 *.uf2
+
+# Environment files
+.envrc
+.direnv/
