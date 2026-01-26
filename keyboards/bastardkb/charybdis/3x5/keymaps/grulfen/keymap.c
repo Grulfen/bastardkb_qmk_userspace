@@ -60,225 +60,285 @@ tap_dance_action_t tap_dance_actions[] = {
 #define TD_CPS TD(TD_CAPS)
 // }}}
 
-// Automatically enable sniping-mode on the pointer layer.
-#define CHARYBDIS_AUTO_SNIPING_ON_LAYER LAYER_POINTER
 
-#ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-static uint16_t auto_pointer_layer_timer = 0;
+// {{{ layers
+//
+enum layers {
+    _QWERTY = 0,
+    _NAV,
+    _SYM,
+    _NUMBER,
+    _MAC_QWE,
+    _MAC_NAV,
+    _MAC_SYM,
+    _MAC_NUMBER,
+    _MOUSE,
+    _NUMBAR,
+    _ADJUST,
+};
 
-#    ifndef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
-#        define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS 1000
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
+enum custom_keycodes {
+    SE_TILDE = SAFE_RANGE,
+    SE_GRAVE,
+    SE_HATT,
+    OS_CTL,
+    OS_SFT,
+    OS_ALT,
+    OS_GUI,
+    ALT_TAB,
+    SA_TAB,
+    MC_TAB,
+    MC_STAB,
+    MC_TICK,
+    MC_STICK,
+};
 
-#    ifndef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
-#        define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD 8
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
-#endif     // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-
-#define ESC_MED LT(LAYER_MEDIA, KC_ESC)
-#define SPC_NAV LT(LAYER_NAVIGATION, KC_SPC)
-#define TAB_FUN LT(LAYER_FUNCTION, KC_TAB)
-#define ENT_SYM LT(LAYER_SYMBOLS, KC_ENT)
-#define BSP_NUM LT(LAYER_NUMERAL, KC_BSPC)
-#define _L_PTR(KC) LT(LAYER_POINTER, KC)
-
-#ifndef POINTING_DEVICE_ENABLE
-#    define DRGSCRL KC_NO
-#    define DPI_MOD KC_NO
-#    define S_D_MOD KC_NO
-#    define SNIPING KC_NO
-#endif // !POINTING_DEVICE_ENABLE
+// Aliases for readability
+#define QWERTY   DF(_QWERTY)
+#define SYM      MO(_SYM)
+#define NAV      MO(_NAV)
+#define NUMBER   MO(_NUMBER)
+#define MAC_QWE  DF(_MAC_QWE)
+#define MAC_SYM  MO(_MAC_SYM)
+#define MAC_NAV  MO(_MAC_NAV)
+#define MAC_NUM  MO(_NUMBER)
+#define NUMBAR   MO(_NUMBAR)
+#define ADJUST   MO(_ADJUST)
 
 // clang-format off
-/** \brief QWERTY layout (3 rows, 10 columns). */
-#define LAYOUT_LAYER_BASE                                                                     \
-       KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P, \
-       KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L, KC_QUOT, \
-       KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH, \
-                      ESC_MED, SPC_NAV, TAB_FUN, ENT_SYM, BSP_NUM
-
-/** Convenience row shorthands. */
-#define _______________DEAD_HALF_ROW_______________ XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX
-#define ______________HOME_ROW_GACS_L______________ KC_LGUI, KC_LALT, KC_LCTL, KC_LSFT, XXXXXXX
-#define ______________HOME_ROW_GACS_R______________ XXXXXXX, KC_LSFT, KC_LCTL, KC_LALT, KC_LGUI
+const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+/*
+ * Base Layer: QWERTY
+ *
+ * ,----------------------------------.  ,----------------------------------.
+ * |   Q  |   W  |   E  |   R  |   T  |  |   Y  |   U  |   I  |   O  |   P  |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |   A  |   S  |   D  |   F  |   G  |  |   H  |   J  |   K  |   L  |   ;  |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |   Z  |   X  |   C  |   V  |   B  |  |   N  |   M  | ,  < | . >  | /  ? |
+ * `-------------+------+------+------|  |------+------+------+-------------'
+ *               |Caps- | Nav  |      |  | Space|  SYM |
+ *               |Word  |      |      |  |      |      |
+ *               `--------------------'  '-------------'
+ */
+    [_QWERTY] = LAYOUT(
+     SE_Q ,  SE_W  ,  SE_E  ,   SE_R ,   SE_T ,        SE_Y,   SE_U ,   SE_I ,   SE_O ,   SE_P ,
+     SE_A ,  SE_S  ,  SE_D  ,   SE_F ,   SE_G ,        SE_H,   SE_J ,   SE_K ,   SE_L , SE_SCLN,
+     SE_Z ,  SE_X  ,  SE_C  ,   SE_V ,   SE_B ,        SE_N,   SE_M , SE_COMM, SE_DOT , SE_SLSH,
+                     TD_CPS ,   NAV  ,_______ ,      KC_SPC,   SYM
+    ),
+/*
+ * Nav Layer: Media, navigation, F-keys
+ *
+ * ,----------------------------------.  ,----------------------------------.
+ * |  tab |alttab|ALTTAB|      |      |  | PgDn | PgUp | Home | End  | VolUp|
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |  gui | alt  | shft | ctrl |Ctrl-b|  |  ←   |  ↓   |  ↑   |   →  | VolDn|
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |PrtSc |      |      |      |      |  | Pause|M Prev|M Play|M Next|VolMut|
+ * `-------------+------+------+------|  |------+------+--------------------'
+ *               |      |      |      |  |      |Number|
+ *               |      |      |      |  |      |      |
+ *               `--------------------'  --------------'
+ */
+    [_NAV] = LAYOUT(
+    KC_TAB , SA_TAB,  ALT_TAB, _______, _______,    KC_PGDN, KC_PGUP, KC_HOME, KC_END,  KC_VOLU,
+    OS_GUI , OS_ALT , OS_SFT , OS_CTL , C(KC_B),    KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, KC_VOLD,
+    KC_PSCR, _______, _______, _______, _______,   KC_PAUSE, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE,
+                      _______, _______, _______,    _______, _______
+    ),
+/*
+ * Sym Layer: Symbols
+ *
+ * ,----------------------------------.  ,----------------------------------.
+ * | esc  |  {   |  [   |  (   |  ~   |  |   ^  |   )  |  ]   |  }   |  `   |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |  -   |  *   |  =   |  _   |  $   |  |   #  | ctrl | shft |  alt |  gui |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |  +   |  |   |  @   |  /   |  %   |  |   '  |  \   |  &   |  ?   |   !  |
+ * `-------------+------+------+------|  |------+------+--------------------'
+ *               |      |      |Number|  |      |      |
+ *               |      |      |      |  |      |      |
+ *               `--------------------'  `-------------'
+ */
+    [_SYM] = LAYOUT(
+     KC_ESC , SE_LCBR, SE_LBRC, SE_LPRN,SE_TILDE,    SE_HATT, SE_RPRN, SE_RBRC, SE_RCBR,SE_GRAVE,
+     SE_MINS, SE_ASTR, SE_EQL , SE_UNDS, SE_DLR ,    SE_HASH, OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
+     SE_PLUS, SE_PIPE, SE_AT  , SE_SLSH, SE_PERC,    SE_QUOT, SE_BSLS, SE_AMPR, SE_QUES, SE_EXLM,
+                       _______, _______, _______,    _______, _______
+   ),
+/*
+ * Num Layer: Numbers
+ *
+ * ,----------------------------------.  ,----------------------------------.
+ * |  1   |  2   |  3   |  4   |  5   |  |   6  |   7  |   8  |   9  |   0  |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * | gui  | alt  | shft | ctrl | F11  |  |  F12 | ctrl | shft |  alt |  gui |
+ * |------+------+------+------+------|  |------+------+------+------+------|
+ * |  F1  |  F2  |  F3  |  F4  |  F5  |  |  F6  |  F7  |  F8  |  F9  |  F10 |
+ * `-------------+------+------+------|  |------+------+--------------------'
+ *               |      |      |      |  |      |      |
+ *               |      |      |      |  |      |      |
+ *               `--------------------'  `-------------'
+ */
+    [_NUMBER] = LAYOUT(
+       SE_1  ,  SE_2  ,  SE_3  ,  SE_4  ,  SE_5  ,    SE_6  ,  SE_7  ,  SE_8  ,  SE_9  ,  SE_0  ,
+      OS_GUI , OS_ALT , OS_SFT , OS_CTL , KC_F11 ,   KC_F12 , OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
+       KC_F1 ,  KC_F2 ,  KC_F3 ,  KC_F4 , KC_F5  ,    KC_F6 ,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F10 ,
+                        _______, _______, _______,   _______, _______
+    ),
+/*
+ * Mac Base Layer: MAC_QWERTY
+ *
+ * ,----------------------------------.   ,----------------------------------.
+ * |   Q  |   W  |   E  |   R  |   T  |   |   Y  |   U  |   I  |   O  |   P  |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |   A  |   S  |   D  |   F  |   G  |   |   H  |   J  |   K  |   L  |   ;  |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |   Z  |   X  |   C  |   V  |   B  |   |   N  |   M  | ,  < | . >  | /  ? |
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |Caps- | Nav  |Shift |   | Space| Sym  |
+ *               |Word  |      |      |   |      |      |
+ *               `--------------------'   `-------------'
+ */
+    [_MAC_QWE] = LAYOUT(
+       AP_Q ,  AP_W  ,  AP_E  ,   AP_R ,   AP_T ,       AP_Y,   AP_U ,   AP_I ,   AP_O ,   AP_P ,
+       AP_A ,  AP_S  ,  AP_D  ,   AP_F ,   AP_G ,       AP_H,   AP_J ,   AP_K ,   AP_L , AP_SCLN,
+       AP_Z ,  AP_X  ,  AP_C  ,   AP_V ,   AP_B ,       AP_N,   AP_M , AP_COMM, AP_DOT , AP_SLSH,
+                       TD_CPS ,MAC_NAV , KC_LSFT,     KC_SPC, MAC_SYM
+    ),
+/*
+ * Mac_Nav Layer: Mac Media, navigation, F-keys
+ *
+ * ,----------------------------------.   ,----------------------------------.
+ * |  tab |alttab|ALTTAB|alt+` |ALT+` |   | PgDn | PgUp | Home | End  | VolUp|
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |  gui | alt  | shft | ctrl |Ctrl-b|   |  ←   |  ↓   |  ↑   |   →  | VolDn|
+ * |------+------+------+------+------|   +------+------+------+------+------|
+ * |PrtSc |      |      |      |      |   | Pause|M Prev|M Play|M Next|VolMut|
+ * `-------------+------+------+------|   +------+------+--------------------'
+ *               |      |      |      |   |      |Number|
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   `-------------'
+ */
+    [_MAC_NAV] = LAYOUT(
+       KC_TAB , MC_STAB, MC_TAB , MC_TICK,MC_STICK,  KC_PGDN, KC_PGUP, KC_HOME, KC_END,  KC_VOLU,
+       OS_GUI , OS_ALT , OS_SFT , OS_CTL , C(KC_B),  KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, KC_VOLD,
+       KC_PSCR, _______, _______, _______, _______, KC_PAUSE, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE,
+                         _______, _______, _______,  _______, _______
+    ),
+/*
+ * Mac Sym Layer: Mac Symbols
+ *
+ * ,----------------------------------.   ,----------------------------------.
+ * | esc  |  {   |  [   |  (   |  ~   |   |   ^  |   )  |  ]   |  }   |  `   |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |  -   |  *   |  =   |  _   |  $   |   |   #  | ctrl | shft |  alt |  gui |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |  +   |  |   |  @   |  /   |  %   |   |   '  |  \   |  &   |  ?   |   !  |
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |      |Number|      |   |      |      |
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   '-------------'
+ */
+    [_MAC_SYM] = LAYOUT(
+     KC_ESC , AP_LCBR, AP_LBRC, AP_LPRN,SE_TILDE,    SE_HATT, AP_RPRN, AP_RBRC, AP_RCBR,SE_GRAVE,
+     AP_MINS, AP_ASTR, AP_EQL , AP_UNDS, AP_DLR ,    AP_HASH, OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
+     AP_PLUS, AP_PIPE, AP_AT  , AP_SLSH, AP_PERC,    AP_QUOT, AP_BSLS, AP_AMPR, AP_QUES, AP_EXLM,
+                       _______, _______, _______,    _______, _______
+   ),
 
 /*
- * Layers used on the Charybdis Nano.
+ * Mac Num Layer: Mac Numbers
  *
- * These layers started off heavily inspired by the Miryoku layout, but trimmed
- * down and tailored for a stock experience that is meant to be fundation for
- * further personalization.
- *
- * See https://github.com/manna-harbour/miryoku for the original layout.
+ * ,----------------------------------.   ,----------------------------------.
+ * |  1   |  2   |  3   |  4   |  5   |   |   6  |   7  |   8  |   9  |   0  |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * | gui  | alt  | shft | ctrl | F11  |   |  F12 | ctrl | shft |  alt |  gui |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |  F1  |  F2  |  F3  |  F4  |  F5  |   |  F6  |  F7  |  F8  |  F9  |  F10 |
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |      |      |      |   |      |      |
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   '-------------'
  */
-
-/**
- * \brief Function layer.
+    [_MAC_NUMBER] = LAYOUT(
+      SE_1  ,  SE_2  ,  SE_3  ,  SE_4  ,  SE_5  ,     SE_6  ,  SE_7  ,  SE_8  ,  SE_9  ,  SE_0  ,
+     OS_GUI , OS_ALT , OS_SFT , OS_CTL , KC_F11 ,    KC_F12 , OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
+      KC_F1 ,  KC_F2 ,  KC_F3 ,  KC_F4 , KC_F5  ,     KC_F6 ,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F10 ,
+                       _______, _______, _______,    _______, _______
+    ),
+/*
+ * Numbar
  *
- * Secondary right-hand layer has function keys mirroring the numerals on the
- * primary layer with extras on the pinkie column, plus system keys on the inner
- * column. App is on the tertiary thumb key and other thumb keys are duplicated
- * from the base layer to enable auto-repeat.
+ * ,----------------------------------.   ,----------------------------------.
+ * |      |  F7  |  F8  |  F9  | F12  |   |      | 7 &  | 8 *  | 9 (  | - _  |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |      |  F4  |  F5  |  F6  | F11  |   |  *   | 4 $  | 5 %  | 6 ^  | = +  |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |      |  F1  |  F2  |  F3  | F10  |   |      | 1 !  | 2 @  | 3 #  |  /   |
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |      |      |      |   | 0 )  |      |
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   '-------------'
  */
-#define LAYOUT_LAYER_FUNCTION                                                                 \
-    _______________DEAD_HALF_ROW_______________, KC_PSCR,   KC_F7,   KC_F8,   KC_F9,  KC_F12, \
-    ______________HOME_ROW_GACS_L______________, KC_SCRL,   KC_F4,   KC_F5,   KC_F6,  KC_F11, \
-    _______________DEAD_HALF_ROW_______________, KC_PAUS,   KC_F1,   KC_F2,   KC_F3,  KC_F10, \
-                      XXXXXXX, XXXXXXX, _______, XXXXXXX, XXXXXXX
-
-/**
- * \brief Media layer.
+    [_NUMBAR] = LAYOUT(
+     _______,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F12 ,    _______, SE_7,    SE_8,    SE_9, SE_MINS,
+     _______,  KC_F4 ,  KC_F5 ,  KC_F6 , KC_F11 ,    SE_ASTR, SE_4,    SE_5,    SE_6, SE_PLUS,
+     _______,  KC_F1 ,  KC_F2 ,  KC_F3 , KC_F10 ,    _______, SE_1,    SE_2,    SE_3, SE_SLSH,
+                       _______, _______, _______,    _______, SE_0
+    ),
+/*
+ * Mouse Layer: Mouse stuff
  *
- * Tertiary left- and right-hand layer is media and RGB control.  This layer is
- * symmetrical to accomodate the left- and right-hand trackball.
+ * ,----------------------------------.   ,----------------------------------.
+ * |      |      | DPI+ | SDPI+|      |   |      |      |      |      |      |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |      |      |      |      |      |   |      |      |      |      |      |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |      |      |MOUSE1|MOUSE2|      |   |      |      |      |SNIPE |SCROLL|
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |      |      |      |   |      |      |
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   '-------------'
  */
-#define LAYOUT_LAYER_MEDIA                                                                    \
-    XXXXXXX,RGB_RMOD, RGB_TOG, RGB_MOD, XXXXXXX, XXXXXXX,RGB_RMOD, RGB_TOG, RGB_MOD, XXXXXXX, \
-    KC_MPRV, KC_VOLD, KC_MUTE, KC_VOLU, KC_MNXT, KC_MPRV, KC_VOLD, KC_MUTE, KC_VOLU, KC_MNXT, \
-    XXXXXXX, XXXXXXX, XXXXXXX,  EE_CLR, QK_BOOT, QK_BOOT,  EE_CLR, XXXXXXX, XXXXXXX, XXXXXXX, \
-                      _______, KC_MPLY, KC_MSTP, KC_MSTP, KC_MPLY
+    [_MOUSE] = LAYOUT(
+     _______, _______, DPI_MOD, S_D_MOD, _______,    _______, _______, _______, _______, _______,
+     _______, _______, _______, _______, _______,    _______, _______, _______, _______, _______,
+     _______, _______, MS_BTN1, MS_BTN2, _______,    _______, _______, _______, _______, _______,
+                       _______, _______, _______,    _______, _______
+    ),
 
-/** \brief Mouse emulation and pointer functions. */
-#define LAYOUT_LAYER_POINTER                                                                  \
-    QK_BOOT,  EE_CLR, XXXXXXX, DPI_MOD, S_D_MOD, S_D_MOD, DPI_MOD, XXXXXXX,  EE_CLR, QK_BOOT, \
-    ______________HOME_ROW_GACS_L______________, ______________HOME_ROW_GACS_R______________, \
-    _______, DRGSCRL, SNIPING, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, SNIPING, DRGSCRL, _______, \
-                      KC_BTN2, KC_BTN1, KC_BTN3, KC_BTN3, KC_BTN1
-
-/**
- * \brief Navigation layer.
+/*
+ * Adjust
  *
- * Primary right-hand layer (left home thumb) is navigation and editing. Cursor
- * keys are on the home position, line and page movement below, clipboard above,
- * caps lock and insert on the inner column. Thumb keys are duplicated from the
- * base layer to avoid having to layer change mid edit and to enable auto-repeat.
+ * ,----------------------------------.   ,----------------------------------.
+ * |QWERTY|HUE_UP|SAT_UP|VAL_UP|SPD_UP|   |      |      |      |      |      |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * | MAC  |HUE_D |SAT_D |VAL_D |SPD_D |   |      |      |      |      |      |
+ * |------+------+------+------+------|   |------+------+------+------+------|
+ * |      |      |      |      |      |   |      |      |      |      |      |
+ * `-------------+------+------+------|   |------+------+--------------------'
+ *               |      |      |      |   |      |      |
+ *               |      |      |      |   |      |      |
+ *               `--------------------'   '-------------'
  */
-#define LAYOUT_LAYER_NAVIGATION                                                               \
-    _______________DEAD_HALF_ROW_______________, _______________DEAD_HALF_ROW_______________, \
-    ______________HOME_ROW_GACS_L______________, KC_CAPS, KC_LEFT, KC_DOWN,   KC_UP, KC_RGHT, \
-    _______________DEAD_HALF_ROW_______________,  KC_INS, KC_HOME, KC_PGDN, KC_PGUP,  KC_END, \
-                      XXXXXXX, _______, XXXXXXX,  KC_ENT, KC_BSPC
+    [_ADJUST] = LAYOUT(
+     QWERTY , UG_HUEU, UG_SATU, UG_VALU, UG_SPDU,    _______, _______, _______, _______, _______,
+     MAC_QWE, UG_HUED, UG_SATD, UG_VALD, UG_SPDD,    _______, _______, _______, _______, _______,
+     _______, UG_TOGG, _______, UG_PREV, UG_NEXT,    _______, _______, _______, _______, _______,
+                       _______, _______, _______,    _______, _______
+    ),
 
-/**
- * \brief Numeral layout.
- *
- * Primary left-hand layer (right home thumb) is numerals and symbols. Numerals
- * are in the standard numpad locations with symbols in the remaining positions.
- * `KC_DOT` is duplicated from the base layer.
- */
-#define LAYOUT_LAYER_NUMERAL                                                                  \
-    KC_LBRC,    KC_7,    KC_8,    KC_9, KC_RBRC, _______________DEAD_HALF_ROW_______________, \
-    KC_SCLN,    KC_4,    KC_5,    KC_6,  KC_EQL, ______________HOME_ROW_GACS_R______________, \
-     KC_GRV,    KC_1,    KC_2,    KC_3, KC_BSLS, _______________DEAD_HALF_ROW_______________, \
-                       KC_DOT,    KC_0, KC_MINS, XXXXXXX, _______
-
-/**
- * \brief Symbols layer.
- *
- * Secondary left-hand layer has shifted symbols in the same locations to reduce
- * chording when using mods with shifted symbols. `KC_LPRN` is duplicated next to
- * `KC_RPRN`.
- */
-#define LAYOUT_LAYER_SYMBOLS                                                                  \
-    KC_LCBR, KC_AMPR, KC_ASTR, KC_LPRN, KC_RCBR, _______________DEAD_HALF_ROW_______________, \
-    KC_COLN,  KC_DLR, KC_PERC, KC_CIRC, KC_PLUS, ______________HOME_ROW_GACS_R______________, \
-    KC_TILD, KC_EXLM,   KC_AT, KC_HASH, KC_PIPE, _______________DEAD_HALF_ROW_______________, \
-                      KC_LPRN, KC_RPRN, KC_UNDS, _______, XXXXXXX
-
-/**
- * \brief Add Home Row mod to a layout.
- *
- * Expects a 10-key per row layout.  Adds support for GACS (Gui, Alt, Ctl, Shift)
- * home row.  The layout passed in parameter must contain at least 20 keycodes.
- *
- * This is meant to be used with `LAYER_ALPHAS_QWERTY` defined above, eg.:
- *
- *     HOME_ROW_MOD_GACS(LAYER_ALPHAS_QWERTY)
- */
-#define _HOME_ROW_MOD_GACS(                                            \
-    L00, L01, L02, L03, L04, R05, R06, R07, R08, R09,                  \
-    L10, L11, L12, L13, L14, R15, R16, R17, R18, R19,                  \
-    ...)                                                               \
-             L00,         L01,         L02,         L03,         L04,  \
-             R05,         R06,         R07,         R08,         R09,  \
-      LGUI_T(L10), LALT_T(L11), LCTL_T(L12), LSFT_T(L13),        L14,  \
-             R15,  RSFT_T(R16), RCTL_T(R17), LALT_T(R18), RGUI_T(R19), \
-      __VA_ARGS__
-#define HOME_ROW_MOD_GACS(...) _HOME_ROW_MOD_GACS(__VA_ARGS__)
-
-/**
- * \brief Add pointer layer keys to a layout.
- *
- * Expects a 10-key per row layout.  The layout passed in parameter must contain
- * at least 30 keycodes.
- *
- * This is meant to be used with `LAYER_ALPHAS_QWERTY` defined above, eg.:
- *
- *     POINTER_MOD(LAYER_ALPHAS_QWERTY)
- */
-#define _POINTER_MOD(                                                  \
-    L00, L01, L02, L03, L04, R05, R06, R07, R08, R09,                  \
-    L10, L11, L12, L13, L14, R15, R16, R17, R18, R19,                  \
-    L20, L21, L22, L23, L24, R25, R26, R27, R28, R29,                  \
-    ...)                                                               \
-             L00,         L01,         L02,         L03,         L04,  \
-             R05,         R06,         R07,         R08,         R09,  \
-             L10,         L11,         L12,         L13,         L14,  \
-             R15,         R16,         R17,         R18,         R19,  \
-      _L_PTR(L20),        L21,         L22,         L23,         L24,  \
-             R25,         R26,         R27,         R28,  _L_PTR(R29), \
-      __VA_ARGS__
-#define POINTER_MOD(...) _POINTER_MOD(__VA_ARGS__)
-
-#define LAYOUT_wrapper(...) LAYOUT(__VA_ARGS__)
-
-const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-  [LAYER_BASE] = LAYOUT_wrapper(
-    POINTER_MOD(HOME_ROW_MOD_GACS(LAYOUT_LAYER_BASE))
-  ),
-  [LAYER_FUNCTION] = LAYOUT_wrapper(LAYOUT_LAYER_FUNCTION),
-  [LAYER_NAVIGATION] = LAYOUT_wrapper(LAYOUT_LAYER_NAVIGATION),
-  [LAYER_MEDIA] = LAYOUT_wrapper(LAYOUT_LAYER_MEDIA),
-  [LAYER_NUMERAL] = LAYOUT_wrapper(LAYOUT_LAYER_NUMERAL),
-  [LAYER_POINTER] = LAYOUT_wrapper(LAYOUT_LAYER_POINTER),
-  [LAYER_SYMBOLS] = LAYOUT_wrapper(LAYOUT_LAYER_SYMBOLS),
 };
 // clang-format on
 
-#ifdef POINTING_DEVICE_ENABLE
-#    ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    if (abs(mouse_report.x) > CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD || abs(mouse_report.y) > CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD) {
-        if (auto_pointer_layer_timer == 0) {
-            layer_on(LAYER_POINTER);
-#        ifdef RGB_MATRIX_ENABLE
-            rgb_matrix_mode_noeeprom(RGB_MATRIX_NONE);
-            rgb_matrix_sethsv_noeeprom(HSV_GREEN);
-#        endif // RGB_MATRIX_ENABLE
-        }
-        auto_pointer_layer_timer = timer_read();
-    }
-    return mouse_report;
-}
-
-void matrix_scan_user(void) {
-    if (auto_pointer_layer_timer != 0 && TIMER_DIFF_16(timer_read(), auto_pointer_layer_timer) >= CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS) {
-        auto_pointer_layer_timer = 0;
-        layer_off(LAYER_POINTER);
-#        ifdef RGB_MATRIX_ENABLE
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_DEFAULT_MODE);
-#        endif // RGB_MATRIX_ENABLE
-    }
-}
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-
-#    ifdef CHARYBDIS_AUTO_SNIPING_ON_LAYER
 layer_state_t layer_state_set_user(layer_state_t state) {
-    charybdis_set_pointer_sniping_enabled(layer_state_cmp(state, CHARYBDIS_AUTO_SNIPING_ON_LAYER));
+    state = update_tri_layer_state(state, _SYM, _NAV, _NUMBER);
+    state = update_tri_layer_state(state, _MAC_SYM, _MAC_NAV, _MAC_NUMBER);
     return state;
-}
-#    endif // CHARYBDIS_AUTO_SNIPING_ON_LAYER
-#endif     // POINTING_DEVICE_ENABLE
+// }}}
+
 
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in
