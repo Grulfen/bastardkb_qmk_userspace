@@ -17,11 +17,8 @@
 #include QMK_KEYBOARD_H
 
 #include "features/casemodes.h"
-#include "features/oneshot.h"
-#include "features/swapper.h"
 #include "features/keymap_swedish_mac_ansi.h"
 #include "keymap_swedish.h"
-#include "sendstring_swedish.h"
 
 enum charybdis_keymap_layers {
     LAYER_BASE = 0,
@@ -337,12 +334,39 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     state = update_tri_layer_state(state, _SYM, _NAV, _NUMBER);
     state = update_tri_layer_state(state, _MAC_SYM, _MAC_NAV, _MAC_NUMBER);
     return state;
+}
+
 // }}}
 
+// {{{ key overrides
+// Add key overrides to emulate american layout on swedish keyboard
+const key_override_t coln_key_override = ko_make_basic(MOD_MASK_SHIFT, SE_SCLN, SE_COLN);  // shift + ; -> :
+const key_override_t squo_key_override = ko_make_basic(MOD_MASK_SHIFT, SE_QUOT, SE_DQUO);  // shift + ' -> "
+
+const key_override_t labk_key_override = ko_make_with_layers(MOD_MASK_SHIFT, SE_COMM, SE_LABK, 1 << _QWERTY);  // shift + , -> <
+const key_override_t rabk_key_override = ko_make_with_layers(MOD_MASK_SHIFT, SE_DOT, SE_RABK, 1 << _QWERTY);   // shift + . -> >
+
+const key_override_t mac_labk_key_override = ko_make_with_layers(MOD_MASK_SHIFT, AP_COMM, AP_LABK, 1 << _MAC_QWE);  // shift + , -> <
+const key_override_t mac_rabk_key_override = ko_make_with_layers(MOD_MASK_SHIFT, AP_DOT, AP_RABK, 1 << _MAC_QWE);   // shift + . -> >
+
+const key_override_t delete_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_BSPC, KC_DEL); // shift + backspace -> Del
+
+const key_override_t *key_overrides[] = {
+    &coln_key_override,
+    &squo_key_override,
+    &labk_key_override,
+    &rabk_key_override,
+    &mac_labk_key_override,
+    &mac_rabk_key_override,
+    &delete_key_override,
+};
+
+// }}}
 
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in
 // rgb_matrix.c.
 void rgb_matrix_update_pwm_buffers(void);
 #endif
+
 // vim: set foldmethod=marker:foldlevel=0
