@@ -16,7 +16,9 @@
  */
 #include QMK_KEYBOARD_H
 
+#include "features/oneshot.h"
 #include "features/casemodes.h"
+#include "features/swapper.h"
 #include "features/keymap_swedish_mac_ansi.h"
 #include "keymap_swedish.h"
 
@@ -37,6 +39,12 @@ enum td_keycodes {
     TD_MAC_SYMB
 };
 
+void td_sym_tap_fn(tap_dance_state_t *state, void *user_data);
+void td_sym_reset_fn(tap_dance_state_t *state, void *user_data);
+
+void mac_td_sym_tap_fn(tap_dance_state_t *state, void *user_data);
+void mac_td_sym_reset_fn(tap_dance_state_t *state, void *user_data);
+
 void dance_capsword(tap_dance_state_t *state, void *user_data) {
     if (state->count == 1) {
         enable_caps_word();
@@ -52,11 +60,14 @@ void dance_capsword(tap_dance_state_t *state, void *user_data) {
 
 tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS] = ACTION_TAP_DANCE_FN(dance_capsword),
+    [TD_SYMB] = ACTION_TAP_DANCE_FN_ADVANCED(td_sym_tap_fn, NULL, td_sym_reset_fn),
+    [TD_MAC_SYMB] = ACTION_TAP_DANCE_FN_ADVANCED(mac_td_sym_tap_fn, NULL, mac_td_sym_reset_fn),
 };
 
 #define TD_CPS TD(TD_CAPS)
+#define TD_SYM TD(TD_SYMB)
+#define TD_MC_S TD(TD_MAC_SYMB)
 // }}}
-
 
 // {{{ layers
 //
@@ -361,6 +372,157 @@ const key_override_t *key_overrides[] = {
     &delete_key_override,
 };
 
+// }}}
+
+// {{{ combos
+
+enum combo_events {
+  JKL_ENT,
+  XC_ESC,
+  OP_ARNG,
+  LSEMICOLON_ADIA,
+  KSEMICOLON_ODIA,
+  MCOMMA_MINS,
+  COMMADOT_UNDS,
+  COMBO_LENGTH
+};
+
+uint16_t COMBO_LEN = COMBO_LENGTH;
+
+const uint16_t PROGMEM jkl_combo[] = {KC_J, KC_K, KC_L, COMBO_END};
+const uint16_t PROGMEM xc_combo[] = {KC_X, KC_C, COMBO_END};
+const uint16_t PROGMEM op_combo[] = {KC_O, KC_P, COMBO_END};
+const uint16_t PROGMEM ksemicolon_combo[] = {KC_K, SE_SCLN, COMBO_END};
+const uint16_t PROGMEM lsemicolon_combo[] = {KC_L, SE_SCLN, COMBO_END};
+const uint16_t PROGMEM mcomma_combo[] = {KC_M, SE_COMM, COMBO_END};
+const uint16_t PROGMEM commadot_combo[] = {SE_COMM, SE_DOT, COMBO_END};
+
+combo_t key_combos[] = {
+    [JKL_ENT] = COMBO(jkl_combo, KC_ENT),
+    [XC_ESC] = COMBO(xc_combo, KC_ESC),
+    [OP_ARNG] = COMBO(op_combo, SE_ARNG),
+    [LSEMICOLON_ADIA] = COMBO(lsemicolon_combo, SE_ADIA),
+    [KSEMICOLON_ODIA] = COMBO(ksemicolon_combo, SE_ODIA),
+    [MCOMMA_MINS] = COMBO(mcomma_combo, SE_MINS),
+    [COMMADOT_UNDS] = COMBO(commadot_combo, SE_UNDS),
+};
+// }}}
+
+// {{{ process_record_user
+
+bool is_oneshot_cancel_key(uint16_t keycode) {
+    switch (keycode) {
+    case SYM:
+    case TD_SYM:
+    case NAV:
+    case MAC_SYM:
+    case TD_MC_S:
+    case MAC_NAV:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool is_oneshot_ignored_key(uint16_t keycode) {
+    switch (keycode) {
+    case SYM:
+    case TD_SYM:
+    case NAV:
+    case MAC_SYM:
+    case TD_MC_S:
+    case MAC_NAV:
+    case OS_SFT:
+    case OS_CTL:
+    case OS_ALT:
+    case OS_GUI:
+        return true;
+    default:
+        return false;
+    }
+}
+
+oneshot_state os_shft_state = os_up_unqueued;
+oneshot_state os_ctrl_state = os_up_unqueued;
+oneshot_state os_alt_state = os_up_unqueued;
+oneshot_state os_cmd_state = os_up_unqueued;
+
+bool sw_win_active = false;
+bool mac_sw_app_active = false;
+bool mac_sw_win_active = false;
+
+bool process_record_user(uint16_t keycode, keyrecord_t* record) {
+    if (!process_case_modes(keycode, record)) {
+        return false;
+    }
+
+    update_oneshot(
+        &os_shft_state, KC_LSFT, OS_SFT, keycode, record
+    );
+    update_oneshot(
+        &os_ctrl_state, KC_LCTL, OS_CTL, keycode, record
+    );
+    update_oneshot(
+        &os_alt_state, KC_LALT, OS_ALT, keycode, record
+    );
+    update_oneshot(
+        &os_cmd_state, KC_LGUI, OS_GUI, keycode, record
+    );
+
+    update_swapper(&sw_win_active, KC_LALT, KC_TAB, KC_LSFT, ALT_TAB, SA_TAB, keycode, record);
+    update_swapper(&mac_sw_app_active, KC_LGUI, KC_TAB, KC_LSFT, MC_TAB, MC_STAB, keycode, record);
+    update_swapper(&mac_sw_win_active, KC_LGUI, AP_LABK, KC_LSFT, MC_TICK, MC_STICK, keycode, record);
+
+    // Regular user keycode case statement
+    switch (keycode) {
+        case SE_TILDE:
+            if (record->event.pressed) {
+                SEND_STRING("~");
+            }
+            return true;
+        case SE_GRAVE:
+            if (record->event.pressed) {
+                SEND_STRING("`");
+            }
+            return true;
+        case SE_HATT:
+            if (record->event.pressed) {
+                SEND_STRING("^");
+            }
+            return true;
+        default:
+            return true;
+    }
+}
+
+// }}}
+
+// {{{ tap dance function definitions
+void td_sym_tap_fn(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        layer_on(_SYM);
+    } else if (state->count == 2) {
+        layer_on(_MOUSE);
+    }
+}
+
+void td_sym_reset_fn(tap_dance_state_t *state, void *user_data) {
+    layer_off(_MOUSE);
+    layer_off(_SYM);
+};
+
+void mac_td_sym_tap_fn(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        layer_on(_MAC_SYM);
+    } else if (state->count == 2) {
+        layer_on(_MOUSE);
+    }
+}
+
+void mac_td_sym_reset_fn(tap_dance_state_t *state, void *user_data) {
+    layer_off(_MOUSE);
+    layer_off(_MAC_SYM);
+};
 // }}}
 
 #ifdef RGB_MATRIX_ENABLE
