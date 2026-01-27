@@ -22,21 +22,13 @@
 #include "features/keymap_swedish_mac_ansi.h"
 #include "keymap_swedish.h"
 
-enum charybdis_keymap_layers {
-    LAYER_BASE = 0,
-    LAYER_FUNCTION,
-    LAYER_NAVIGATION,
-    LAYER_MEDIA,
-    LAYER_POINTER,
-    LAYER_NUMERAL,
-    LAYER_SYMBOLS,
-};
-
 // {{{ tap dances
 enum td_keycodes {
     TD_CAPS,
     TD_SYMB,
-    TD_MAC_SYMB
+    TD_MAC_SYMB,
+    TD_NAVI,
+    TD_MAC_NAVI
 };
 
 void td_sym_tap_fn(tap_dance_state_t *state, void *user_data);
@@ -44,6 +36,12 @@ void td_sym_reset_fn(tap_dance_state_t *state, void *user_data);
 
 void mac_td_sym_tap_fn(tap_dance_state_t *state, void *user_data);
 void mac_td_sym_reset_fn(tap_dance_state_t *state, void *user_data);
+
+void td_nav_tap_fn(tap_dance_state_t *state, void *user_data);
+void td_nav_reset_fn(tap_dance_state_t *state, void *user_data);
+
+void mac_td_nav_tap_fn(tap_dance_state_t *state, void *user_data);
+void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data);
 
 void dance_capsword(tap_dance_state_t *state, void *user_data) {
     if (state->count == 1) {
@@ -62,11 +60,15 @@ tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS] = ACTION_TAP_DANCE_FN(dance_capsword),
     [TD_SYMB] = ACTION_TAP_DANCE_FN_ADVANCED(td_sym_tap_fn, NULL, td_sym_reset_fn),
     [TD_MAC_SYMB] = ACTION_TAP_DANCE_FN_ADVANCED(mac_td_sym_tap_fn, NULL, mac_td_sym_reset_fn),
+    [TD_NAVI] = ACTION_TAP_DANCE_FN_ADVANCED(td_nav_tap_fn, NULL, td_nav_reset_fn),
+    [TD_MAC_NAVI] = ACTION_TAP_DANCE_FN_ADVANCED(mac_td_nav_tap_fn, NULL, mac_td_nav_reset_fn),
 };
 
 #define TD_CPS TD(TD_CAPS)
 #define TD_SYM TD(TD_SYMB)
 #define TD_MC_S TD(TD_MAC_SYMB)
+#define TD_NAV TD(TD_NAVI)
+#define TD_MC_N TD(TD_MAC_NAVI)
 // }}}
 
 // {{{ layers
@@ -125,7 +127,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------|  |------+------+------+------+------|
  * |   Z  |   X  |   C  |   V  |   B  |  |   N  |   M  | ,  < | . >  | /  ? |
  * `-------------+------+------+------|  |------+------+------+-------------'
- *               |Caps- | Nav  |      |  | Space|  SYM |
+ *               |Caps- | Nav  |Numbar|  | Space|  SYM |
  *               |Word  |      |      |  |      |      |
  *               `--------------------'  '-------------'
  */
@@ -133,7 +135,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      SE_Q ,  SE_W  ,  SE_E  ,   SE_R ,   SE_T ,        SE_Y,   SE_U ,   SE_I ,   SE_O ,   SE_P ,
      SE_A ,  SE_S  ,  SE_D  ,   SE_F ,   SE_G ,        SE_H,   SE_J ,   SE_K ,   SE_L , SE_SCLN,
      SE_Z ,  SE_X  ,  SE_C  ,   SE_V ,   SE_B ,        SE_N,   SE_M , SE_COMM, SE_DOT , SE_SLSH,
-                     TD_CPS ,   NAV  ,_______ ,      KC_SPC,   SYM
+                     TD_CPS , TD_NAV , NUMBAR ,      KC_SPC, TD_SYM
     ),
 /*
  * Nav Layer: Media, navigation, F-keys
@@ -153,7 +155,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TAB , SA_TAB,  ALT_TAB, _______, _______,    KC_PGDN, KC_PGUP, KC_HOME, KC_END,  KC_VOLU,
     OS_GUI , OS_ALT , OS_SFT , OS_CTL , C(KC_B),    KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, KC_VOLD,
     KC_PSCR, _______, _______, _______, _______,   KC_PAUSE, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE,
-                      _______, _______, _______,    _______, _______
+                      _______, TD_NAV , _______,    _______, _______
     ),
 /*
  * Sym Layer: Symbols
@@ -173,7 +175,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_ESC , SE_LCBR, SE_LBRC, SE_LPRN,SE_TILDE,    SE_HATT, SE_RPRN, SE_RBRC, SE_RCBR,SE_GRAVE,
      SE_MINS, SE_ASTR, SE_EQL , SE_UNDS, SE_DLR ,    SE_HASH, OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
      SE_PLUS, SE_PIPE, SE_AT  , SE_SLSH, SE_PERC,    SE_QUOT, SE_BSLS, SE_AMPR, SE_QUES, SE_EXLM,
-                       _______, _______, _______,    _______, _______
+                       _______, _______, _______,    _______, TD_SYMB
    ),
 /*
  * Num Layer: Numbers
@@ -205,7 +207,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------|   |------+------+------+------+------|
  * |   Z  |   X  |   C  |   V  |   B  |   |   N  |   M  | ,  < | . >  | /  ? |
  * `-------------+------+------+------|   |------+------+--------------------'
- *               |Caps- | Nav  |Shift |   | Space| Sym  |
+ *               |Caps- | Nav  |Number|   | Space| Sym  |
  *               |Word  |      |      |   |      |      |
  *               `--------------------'   `-------------'
  */
@@ -213,7 +215,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        AP_Q ,  AP_W  ,  AP_E  ,   AP_R ,   AP_T ,       AP_Y,   AP_U ,   AP_I ,   AP_O ,   AP_P ,
        AP_A ,  AP_S  ,  AP_D  ,   AP_F ,   AP_G ,       AP_H,   AP_J ,   AP_K ,   AP_L , AP_SCLN,
        AP_Z ,  AP_X  ,  AP_C  ,   AP_V ,   AP_B ,       AP_N,   AP_M , AP_COMM, AP_DOT , AP_SLSH,
-                       TD_CPS ,MAC_NAV , KC_LSFT,     KC_SPC, MAC_SYM
+                       TD_CPS ,TD_MC_N , NUMBAR ,     KC_SPC, TD_MC_S
     ),
 /*
  * Mac_Nav Layer: Mac Media, navigation, F-keys
@@ -233,7 +235,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        KC_TAB , MC_STAB, MC_TAB , MC_TICK,MC_STICK,  KC_PGDN, KC_PGUP, KC_HOME, KC_END,  KC_VOLU,
        OS_GUI , OS_ALT , OS_SFT , OS_CTL , C(KC_B),  KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, KC_VOLD,
        KC_PSCR, _______, _______, _______, _______, KC_PAUSE, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE,
-                         _______, _______, _______,  _______, _______
+                         _______, TD_MC_N, _______,  _______, _______
     ),
 /*
  * Mac Sym Layer: Mac Symbols
@@ -253,7 +255,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_ESC , AP_LCBR, AP_LBRC, AP_LPRN,SE_TILDE,    SE_HATT, AP_RPRN, AP_RBRC, AP_RCBR,SE_GRAVE,
      AP_MINS, AP_ASTR, AP_EQL , AP_UNDS, AP_DLR ,    AP_HASH, OS_CTL , OS_SFT , OS_ALT , OS_GUI ,
      AP_PLUS, AP_PIPE, AP_AT  , AP_SLSH, AP_PERC,    AP_QUOT, AP_BSLS, AP_AMPR, AP_QUES, AP_EXLM,
-                       _______, _______, _______,    _______, _______
+                       _______, _______, _______,    _______, TD_MC_S
    ),
 
 /*
@@ -313,7 +315,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_MOUSE] = LAYOUT(
      _______, _______, DPI_MOD, S_D_MOD, _______,    _______, _______, _______, _______, _______,
      _______, _______, _______, _______, _______,    _______, _______, _______, _______, _______,
-     _______, _______, MS_BTN1, MS_BTN2, _______,    _______, _______, _______, _______, _______,
+     _______, _______, MS_BTN1, MS_BTN2, _______,    _______, _______, _______, SNIPING, DRGSCRL,
                        _______, _______, _______,    _______, _______
     ),
 
@@ -321,18 +323,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * Adjust
  *
  * ,----------------------------------.   ,----------------------------------.
- * |QWERTY|HUE_UP|SAT_UP|VAL_UP|SPD_UP|   |      |      |      |      |      |
+ * |QWERTY|HUE_UP|SAT_UP|VAL_UP|SPD_UP|   |      |      |      |      | BOOT |
  * |------+------+------+------+------|   |------+------+------+------+------|
  * | MAC  |HUE_D |SAT_D |VAL_D |SPD_D |   |      |      |      |      |      |
  * |------+------+------+------+------|   |------+------+------+------+------|
- * |      |      |      |      |      |   |      |      |      |      |      |
+ * |      |RGBTOG|      |RGBPRV|RGBNXT|   |      |      |      |      |      |
  * `-------------+------+------+------|   |------+------+--------------------'
  *               |      |      |      |   |      |      |
  *               |      |      |      |   |      |      |
  *               `--------------------'   '-------------'
  */
     [_ADJUST] = LAYOUT(
-     QWERTY , UG_HUEU, UG_SATU, UG_VALU, UG_SPDU,    _______, _______, _______, _______, _______,
+     QWERTY , UG_HUEU, UG_SATU, UG_VALU, UG_SPDU,    _______, _______, _______, _______, QK_BOOT,
      MAC_QWE, UG_HUED, UG_SATD, UG_VALD, UG_SPDD,    _______, _______, _______, _______, _______,
      _______, UG_TOGG, _______, UG_PREV, UG_NEXT,    _______, _______, _______, _______, _______,
                        _______, _______, _______,    _______, _______
@@ -415,9 +417,11 @@ bool is_oneshot_cancel_key(uint16_t keycode) {
     case SYM:
     case TD_SYM:
     case NAV:
+    case TD_NAV:
     case MAC_SYM:
     case TD_MC_S:
     case MAC_NAV:
+    case TD_MC_N:
         return true;
     default:
         return false;
@@ -429,9 +433,11 @@ bool is_oneshot_ignored_key(uint16_t keycode) {
     case SYM:
     case TD_SYM:
     case NAV:
+    case TD_NAV:
     case MAC_SYM:
     case TD_MC_S:
     case MAC_NAV:
+    case TD_MC_N:
     case OS_SFT:
     case OS_CTL:
     case OS_ALT:
@@ -502,12 +508,12 @@ void td_sym_tap_fn(tap_dance_state_t *state, void *user_data) {
     if (state->count == 1) {
         layer_on(_SYM);
     } else if (state->count == 2) {
-        layer_on(_MOUSE);
+        layer_on(_ADJUST);
     }
 }
 
 void td_sym_reset_fn(tap_dance_state_t *state, void *user_data) {
-    layer_off(_MOUSE);
+    layer_off(_ADJUST);
     layer_off(_SYM);
 };
 
@@ -515,13 +521,39 @@ void mac_td_sym_tap_fn(tap_dance_state_t *state, void *user_data) {
     if (state->count == 1) {
         layer_on(_MAC_SYM);
     } else if (state->count == 2) {
-        layer_on(_MOUSE);
+        layer_on(_ADJUST);
     }
 }
 
 void mac_td_sym_reset_fn(tap_dance_state_t *state, void *user_data) {
-    layer_off(_MOUSE);
+    layer_off(_ADJUST);
     layer_off(_MAC_SYM);
+};
+
+void td_nav_tap_fn(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        layer_on(_NAV);
+    } else if (state->count == 2) {
+        layer_on(_MOUSE);
+    }
+}
+
+void td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
+    layer_off(_MOUSE);
+    layer_off(_NAV);
+};
+
+void mac_td_nav_tap_fn(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        layer_on(_MAC_NAV);
+    } else if (state->count == 2) {
+        layer_on(_MOUSE);
+    }
+}
+
+void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
+    layer_off(_MOUSE);
+    layer_off(_MAC_NAV);
 };
 // }}}
 
