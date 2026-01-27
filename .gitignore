@@ -13,3 +13,7 @@
 # Environment files
 .envrc
 .direnv/
+
+#
+.cache/
+compile_commands.json
