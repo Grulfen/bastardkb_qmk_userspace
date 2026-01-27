@@ -557,6 +557,23 @@ void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
 };
 // }}}
 
+// {{{ process_detected_host_os
+
+bool process_detected_host_os_user(os_variant_t detected_os) {
+    switch (detected_os) {
+        case OS_MACOS:
+            set_single_default_layer(_MAC_QWE);
+            break;
+        case OS_WINDOWS:
+        case OS_LINUX:
+            set_single_default_layer(_QWERTY);
+            break;
+        default:
+            break;
+    }
+    return true;
+}
+// }}}
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in
 // rgb_matrix.c.
