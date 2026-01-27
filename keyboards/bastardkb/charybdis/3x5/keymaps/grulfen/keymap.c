@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "pointing_device.h"
 #include QMK_KEYBOARD_H
 
 #include "features/oneshot.h"
@@ -555,6 +556,29 @@ void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
     layer_off(_MOUSE);
     layer_off(_MAC_NAV);
 };
+// }}}
+
+// {{{ Mouse
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report)
+{
+    if (layer_state_is(_MOUSE)) {
+        return mouse_report;
+    }
+
+    static uint16_t last_backspace_time = 0;
+    if (mouse_report.x < -10 && timer_elapsed(last_backspace_time) > 50)
+    {
+        tap_code(KC_BSPC);
+        last_backspace_time = timer_read();
+    }
+
+    mouse_report.x = 0;
+    mouse_report.y = 0;
+    mouse_report.h = 0;
+    mouse_report.v = 0;
+
+    return mouse_report;
+}
 // }}}
 
 // {{{ process_detected_host_os
