@@ -565,11 +565,24 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report)
         return mouse_report;
     }
 
-    static uint16_t last_backspace_time = 0;
-    if (mouse_report.x < -10 && timer_elapsed(last_backspace_time) > 50)
-    {
-        tap_code(KC_BSPC);
-        last_backspace_time = timer_read();
+    if (abs(mouse_report.y) > abs(mouse_report.x)) {
+        static uint16_t last_scroll_time = 0;
+        // Jag skull vilja att ju snabbare jag scrollar, desto oftare ska jag trycka på knappen.
+        // Det kan jag fixa genom att låta tiden man jämför timer_elapsed vara proportionelig mot hastigheten i mouse_report
+        if (mouse_report.y < -7 && timer_elapsed(last_scroll_time) > 30)
+        {
+            tap_code(KC_UP);
+            last_scroll_time = timer_read();
+        } else if (mouse_report.y > 7 && timer_elapsed(last_scroll_time) > 30) {
+            tap_code(KC_DOWN);
+            last_scroll_time = timer_read();
+        }
+    } else {
+        static uint16_t last_backspace_time = 0;
+        if (mouse_report.x < -10 && timer_elapsed(last_backspace_time) > 50) {
+            tap_code(KC_BSPC);
+            last_backspace_time = timer_read();
+        }
     }
 
     mouse_report.x = 0;
@@ -598,6 +611,7 @@ bool process_detected_host_os_user(os_variant_t detected_os) {
     return true;
 }
 // }}}
+
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in
 // rgb_matrix.c.
