@@ -563,7 +563,7 @@ void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
 #define SCROLL_THRESHOLD 7
 #define BACKSPACE_THRESHOLD -10
 #define MAX_SCROLL_SPEED 50
-#define MIN_SCROLL_DELAY 10
+#define MIN_SCROLL_DELAY 5
 #define BACKSPACE_DELAY 50
 
 static void clear_mouse_movement(report_mouse_t* mouse_report) {
@@ -579,7 +579,7 @@ static void handle_vertical_scroll(mouse_xy_report_t y_movement) {
     int speed = abs(y_movement);
     speed = speed > MAX_SCROLL_SPEED ? MAX_SCROLL_SPEED : speed;
     float fraction = speed / (float)MAX_SCROLL_SPEED;
-    int adaptive_delay = MIN_SCROLL_DELAY + (128 * (1.0f - fraction));
+    int adaptive_delay = MIN_SCROLL_DELAY + (100 * (1.0f - fraction));
 
     if (y_movement < -SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
         tap_code(KC_UP);
