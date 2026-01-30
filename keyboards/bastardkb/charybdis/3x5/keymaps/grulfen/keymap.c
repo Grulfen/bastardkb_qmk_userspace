@@ -559,37 +559,63 @@ void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
 // }}}
 
 // {{{ Mouse
-report_mouse_t pointing_device_task_user(report_mouse_t mouse_report)
-{
+
+#define SCROLL_THRESHOLD 7
+#define BACKSPACE_THRESHOLD -10
+#define MAX_SCROLL_SPEED 50
+#define MIN_SCROLL_DELAY 10
+#define BACKSPACE_DELAY 50
+
+static void clear_mouse_movement(report_mouse_t* mouse_report) {
+    mouse_report->x = 0;
+    mouse_report->y = 0;
+    mouse_report->h = 0;
+    mouse_report->v = 0;
+}
+
+static void handle_vertical_scroll(mouse_xy_report_t y_movement) {
+    static uint16_t last_scroll_time = 0;
+
+    int speed = abs(y_movement);
+    speed = speed > MAX_SCROLL_SPEED ? MAX_SCROLL_SPEED : speed;
+    float fraction = speed / (float)MAX_SCROLL_SPEED;
+    int adaptive_delay = MIN_SCROLL_DELAY + (128 * (1.0f - fraction));
+
+    if (y_movement < -SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
+        tap_code(KC_UP);
+        last_scroll_time = timer_read();
+    } else if (y_movement > SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
+        tap_code(KC_DOWN);
+        last_scroll_time = timer_read();
+    }
+}
+
+static void handle_horizontal_backspace(mouse_xy_report_t x_movement) {
+    static uint16_t last_backspace_time = 0;
+
+    if (x_movement < BACKSPACE_THRESHOLD && timer_elapsed(last_backspace_time) > BACKSPACE_DELAY) {
+        tap_code(KC_BSPC);
+        last_backspace_time = timer_read();
+    }
+}
+
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     if (layer_state_is(_MOUSE)) {
         return mouse_report;
     }
 
-    if (abs(mouse_report.y) > abs(mouse_report.x)) {
-        static uint16_t last_scroll_time = 0;
-        // Jag skull vilja att ju snabbare jag scrollar, desto oftare ska jag trycka på knappen.
-        // Det kan jag fixa genom att låta tiden man jämför timer_elapsed vara proportionelig mot hastigheten i mouse_report
-        if (mouse_report.y < -7 && timer_elapsed(last_scroll_time) > 30)
-        {
-            tap_code(KC_UP);
-            last_scroll_time = timer_read();
-        } else if (mouse_report.y > 7 && timer_elapsed(last_scroll_time) > 30) {
-            tap_code(KC_DOWN);
-            last_scroll_time = timer_read();
-        }
-    } else {
-        static uint16_t last_backspace_time = 0;
-        if (mouse_report.x < -10 && timer_elapsed(last_backspace_time) > 50) {
-            tap_code(KC_BSPC);
-            last_backspace_time = timer_read();
-        }
+    if (!(layer_state_is(_NAV) || layer_state_is(_MAC_NAV))) {
+        clear_mouse_movement(&mouse_report);
+        return mouse_report;
     }
 
-    mouse_report.x = 0;
-    mouse_report.y = 0;
-    mouse_report.h = 0;
-    mouse_report.v = 0;
+    if (abs(mouse_report.y) > abs(mouse_report.x)) {
+        handle_vertical_scroll(mouse_report.y);
+    } else {
+        handle_horizontal_backspace(mouse_report.x);
+    }
 
+    clear_mouse_movement(&mouse_report);
     return mouse_report;
 }
 // }}}
