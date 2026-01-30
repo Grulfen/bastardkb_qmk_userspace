@@ -573,13 +573,16 @@ static void clear_mouse_movement(report_mouse_t* mouse_report) {
     mouse_report->v = 0;
 }
 
+static int calculate_adaptive_delay(int movement, int max_speed, int min_delay, int delay_range) {
+    int speed = abs(movement);
+    speed = speed > max_speed ? max_speed : speed;
+    const float fraction = speed / (float)max_speed;
+    return min_delay + (delay_range * (1.0f - fraction));
+}
+
 static void handle_vertical_scroll(mouse_xy_report_t y_movement) {
     static uint16_t last_scroll_time = 0;
-
-    int speed = abs(y_movement);
-    speed = speed > MAX_SCROLL_SPEED ? MAX_SCROLL_SPEED : speed;
-    float fraction = speed / (float)MAX_SCROLL_SPEED;
-    int adaptive_delay = MIN_SCROLL_DELAY + (100 * (1.0f - fraction));
+    const int adaptive_delay = calculate_adaptive_delay(y_movement, MAX_SCROLL_SPEED, MIN_SCROLL_DELAY, 100);
 
     if (y_movement < -SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
         tap_code(KC_UP);
@@ -593,9 +596,12 @@ static void handle_vertical_scroll(mouse_xy_report_t y_movement) {
 static void handle_horizontal_backspace(mouse_xy_report_t x_movement) {
     static uint16_t last_backspace_time = 0;
 
-    if (x_movement < BACKSPACE_THRESHOLD && timer_elapsed(last_backspace_time) > BACKSPACE_DELAY) {
-        tap_code(KC_BSPC);
-        last_backspace_time = timer_read();
+    if (x_movement < BACKSPACE_THRESHOLD) {
+        const int adaptive_delay = calculate_adaptive_delay(x_movement, MAX_SCROLL_SPEED, MIN_SCROLL_DELAY, 100);
+        if (timer_elapsed(last_backspace_time) > adaptive_delay) {
+            tap_code(KC_BSPC);
+            last_backspace_time = timer_read();
+        }
     }
 }
 
