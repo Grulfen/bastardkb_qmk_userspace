@@ -566,6 +566,7 @@ void mac_td_nav_reset_fn(tap_dance_state_t *state, void *user_data) {
 #define MAX_SCROLL_SPEED 50
 #define MIN_SCROLL_DELAY 5
 #define BACKSPACE_DELAY 50
+#define MODE_SWITCH_TIMEOUT 200
 
 static void clear_mouse_movement(report_mouse_t* mouse_report) {
     mouse_report->x = 0;
@@ -607,6 +608,9 @@ static void handle_horizontal_backspace(mouse_xy_report_t x_movement) {
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    static uint16_t last_mode_switch_time = 0;
+    static bool last_was_scroll = false;
+
     if (layer_state_is(_MOUSE)) {
         return mouse_report;
     }
@@ -616,7 +620,18 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         return mouse_report;
     }
 
-    if (abs(mouse_report.y) > abs(mouse_report.x)) {
+    bool current_is_scroll = abs(mouse_report.y) > abs(mouse_report.x);
+
+    if (current_is_scroll != last_was_scroll) {
+        if (timer_elapsed(last_mode_switch_time) < MODE_SWITCH_TIMEOUT) {
+            clear_mouse_movement(&mouse_report);
+            return mouse_report;
+        }
+        last_mode_switch_time = timer_read();
+        last_was_scroll = current_is_scroll;
+    }
+
+    if (current_is_scroll) {
         handle_vertical_scroll(mouse_report.y);
     } else {
         handle_horizontal_backspace(mouse_report.x);
