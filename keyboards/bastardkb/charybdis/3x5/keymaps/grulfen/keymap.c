@@ -22,6 +22,7 @@
 #include "features/swapper.h"
 #include "features/keymap_swedish_mac_ansi.h"
 #include "keymap_swedish.h"
+#include "sendstring_swedish.h"
 
 // {{{ tap dances
 enum td_keycodes {
