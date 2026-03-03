@@ -582,19 +582,6 @@ static int calculate_adaptive_delay(int movement, int max_speed, int min_delay, 
     return min_delay + (delay_range * (1.0f - fraction));
 }
 
-static void handle_vertical_scroll(mouse_xy_report_t y_movement) {
-    static uint16_t last_scroll_time = 0;
-    const int adaptive_delay = calculate_adaptive_delay(y_movement, MAX_SCROLL_SPEED, MIN_SCROLL_DELAY, 100);
-
-    if (y_movement < -SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
-        tap_code(KC_UP);
-        last_scroll_time = timer_read();
-    } else if (y_movement > SCROLL_THRESHOLD && timer_elapsed(last_scroll_time) > adaptive_delay) {
-        tap_code(KC_DOWN);
-        last_scroll_time = timer_read();
-    }
-}
-
 static void handle_horizontal_backspace(mouse_xy_report_t x_movement) {
     static uint16_t last_backspace_time = 0;
 
@@ -608,35 +595,11 @@ static void handle_horizontal_backspace(mouse_xy_report_t x_movement) {
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    static uint16_t last_mode_switch_time = 0;
-    static bool last_was_scroll = false;
-
     if (layer_state_is(_MOUSE)) {
         return mouse_report;
     }
 
-    if (!(layer_state_is(_NAV) || layer_state_is(_MAC_NAV))) {
-        clear_mouse_movement(&mouse_report);
-        return mouse_report;
-    }
-
-    bool current_is_scroll = abs(mouse_report.y) > abs(mouse_report.x);
-
-    if (current_is_scroll != last_was_scroll) {
-        if (timer_elapsed(last_mode_switch_time) < MODE_SWITCH_TIMEOUT) {
-            clear_mouse_movement(&mouse_report);
-            return mouse_report;
-        }
-        last_mode_switch_time = timer_read();
-        last_was_scroll = current_is_scroll;
-    }
-
-    if (current_is_scroll) {
-        handle_vertical_scroll(mouse_report.y);
-    } else {
-        handle_horizontal_backspace(mouse_report.x);
-    }
-
+    handle_horizontal_backspace(mouse_report.x);
     clear_mouse_movement(&mouse_report);
     return mouse_report;
 }
